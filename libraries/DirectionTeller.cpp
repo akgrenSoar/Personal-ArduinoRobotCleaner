@@ -1,14 +1,11 @@
 
 #include "Arduino.h"
-#include "DirectionModule.h"
+#include "DirectionTeller.h"
 
 #include "LightSensor.h"
-#include "UltrasonicSensor.h"
+#include "SonicSensor.h"
 
-DirectionModule::DirectionModule(
-	LightSensor *frontSensor,
-	UltrasonicSensor *leftSensor,
-	UltrasonicSensor *rightSensor)
+DirectionTeller::DirectionTeller(LightSensor *frontSensor, SonicSensor *leftSensor, SonicSensor *rightSensor)
 	:	_frontLightSensor(frontSensor),
 		_leftUltrasonicSensor(leftSensor),
 		_rightUltrasonicSensor(rightSensor)
@@ -18,7 +15,7 @@ DirectionModule::DirectionModule(
 
 
 // Returns 1 Forward 2 Left 3 Right 4 Reverse
-int DirectionModule::getDirection()
+int DirectionTeller::getDirection()
 {
 	bool hasFrontObstacle = _frontLightSensor->isObstacleDetected();
 	
@@ -30,12 +27,12 @@ int DirectionModule::getDirection()
 }
 
 // Returns 1 Forward 2 Left 3 Right 4 Reverse
-int DirectionModule::readUltrasonic()
+int DirectionTeller::readUltrasonic()
 {
-	uint32_t leftDistance = _leftUltrasonicSensor->getDistance();
-	uint32_t rightDistance = _rightUltrasonicSensor->getDistance();
+	unsigned long leftDistance = _leftUltrasonicSensor->getDistance();
+	unsigned long rightDistance = _rightUltrasonicSensor->getDistance();
 	
-	uint32_t _sd = 17;
+	unsigned long _sd = 17;
 	
     if (leftDistance > _sd && rightDistance > _sd) {
         return 1; // Move forward
@@ -50,7 +47,7 @@ int DirectionModule::readUltrasonic()
 }
 
 // Returns 1 Forward 2 Left 3 Right 4 Reverse
-int DirectionModule::readUltrasonicAndDoubleConfirm()
+int DirectionTeller::readUltrasonicAndDoubleConfirm()
 {
 	int count = 0;
 	int prevDirection = readUltrasonic();
@@ -63,7 +60,7 @@ int DirectionModule::readUltrasonicAndDoubleConfirm()
 			count = 0;
 			prevDirection = currDirection;
 		}
-	} while (count < 3);
+	} while (count < 4);
 	
 	return currDirection;
 }

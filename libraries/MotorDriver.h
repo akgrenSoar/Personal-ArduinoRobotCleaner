@@ -12,10 +12,7 @@ class MotorDriver
 		void move(int leftSpeed, int rightSpeed);
 	
 	private:
-		uint8_t _pin1A;
-		uint8_t _pin1D;
-		uint8_t _pin2A;
-		uint8_t _pin2D;
+		const uint8_t _pin1A, _pin1D, _pin2A, _pin2D;
 		void leftWheel(uint8_t speed, uint8_t direction);
 		void rightWheel(uint8_t speed, uint8_t direction);
 	

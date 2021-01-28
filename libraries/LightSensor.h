@@ -11,7 +11,7 @@ class LightSensor
 		bool isObstacleDetected();
 		
     private:
-        uint8_t _pinIn;
+        const uint8_t _pinIn;
 };
 
 #endif

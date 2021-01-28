@@ -3,12 +3,8 @@
 #include "MotorDriver.h"
 
 MotorDriver::MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D)
-{	
-	_pin1A = pin1A;
-	_pin1D = pin1D;
-	_pin2A = pin2A;
-	_pin2D = pin2D;
-	
+:	_pin1A(pin1A), _pin1D(pin1D), _pin2A(pin2A), _pin2D(pin2D)
+{
 	pinMode(_pin1A, OUTPUT);
 	pinMode(_pin1D, OUTPUT);
 	pinMode(_pin2A, OUTPUT);

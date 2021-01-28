@@ -3,8 +3,8 @@
 #include "LightSensor.h"
 
 LightSensor::LightSensor(uint8_t pinIn)
+:    _pinIn(pinIn)
 {
-    _pinIn = pinIn;
     pinMode(_pinIn, INPUT);
 }
 

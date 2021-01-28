@@ -1,16 +1,16 @@
 
 #include "Arduino.h"
-#include "UltrasonicSensor.h"
+#include "SonicSensor.h"
 
-UltrasonicSensor::UltrasonicSensor(uint8_t trigPin, uint8_t echoPin)
+SonicSensor::SonicSensor(uint8_t trigPin, uint8_t echoPin)
+:	_trigPin(trigPin),
+	_echoPin(echoPin)
 {
-	_trigPin = trigPin;
-	_echoPin = echoPin;
 	pinMode(_trigPin, OUTPUT); // Sets the trigPin as an Output
 	pinMode(_echoPin, INPUT); // Sets the echoPin as an Input
 }
 
-unsigned long UltrasonicSensor::getDistance()
+unsigned long SonicSensor::getDistance()
 {
 	digitalWrite(_trigPin, LOW);
     delayMicroseconds(2);
