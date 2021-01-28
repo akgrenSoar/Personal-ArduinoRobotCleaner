@@ -8,7 +8,7 @@ LightSensor::LightSensor(uint8_t pinIn)
     pinMode(_pinIn, INPUT);
 }
 
-bool LightSensor::isObstacleDetected()
+bool LightSensor::isTriggered()
 {
     return digitalRead(_pinIn) == LOW ? true : false ;
 }

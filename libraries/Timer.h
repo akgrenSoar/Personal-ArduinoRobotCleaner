@@ -13,8 +13,10 @@ class Timer
         unsigned long getDuration();
         void setDuration(unsigned long millis);
 		
+		void reset();
 		void start();
-		unsigned long split();
+		void restart();
+		unsigned long timeElapsed();
 		
 		bool isExpired();
 		

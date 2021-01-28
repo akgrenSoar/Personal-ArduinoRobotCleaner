@@ -1,50 +1,43 @@
 
-#include "MovementModule.h"
+#include "MovementLogic.h"
 
 #include "Arduino.h"
 #include "MotorDriver.h"
 #include "Timer.h"
 
-MovementModule::MovementModule(MotorDriver *motorDriver)
+/////////////////////////////////////////
+///////////////Constructor///////////////
+/////////////////////////////////////////
+
+MovementLogic::MovementLogic(MotorDriver *motorDriver, uint8_t speed)
 :	_motorDriver (motorDriver),
 	_timer ()
 {
-	_speed = 255;
+	_speed = speed;
 	_direction = 0;
 	_moveCode = 0;
 }
 
-uint8_t MovementModule::getSpeed()
+///////////////////////////////////////////////
+///////////////Getter and Setter///////////////
+///////////////////////////////////////////////
+
+uint8_t MovementLogic::getSpeed()
 {
 	return _speed;
 }
 
-void MovementModule::setSpeed(uint8_t speed)
+void MovementLogic::setSpeed(uint8_t speed)
 {
 	_speed = speed;
 }
 
-bool MovementModule::isExpired()
-{
-	return _timer.isExpired();
-}
-
-void MovementModule::refresh()
-{
-	move(_moveCode);
-}
-
-void MovementModule::pause(unsigned long duration)
-{
-	move(0, 0, duration);
-}
-
-uint8_t MovementModule::getDirection()
+uint8_t MovementLogic::getDirection()
 {
 	return _direction;
 }
 
-void MovementModule::setDirection(uint8_t direction)
+void MovementLogic::setDirection(uint8_t direction)
 {
 	switch (direction) {
 		case 0: // Stop
@@ -94,13 +87,26 @@ void MovementModule::setDirection(uint8_t direction)
 	}
 }
 
-// Randomly picks one value from the array
-int MovementModule::roll(int arraySize, int *array)
+/////////////////////////////////////
+///////////////Methods///////////////
+/////////////////////////////////////
+
+bool MovementLogic::isExpired()
 {
-	return array[random(arraySize)];
+	return _timer.isExpired();
 }
 
-void MovementModule::move(uint8_t moveCode)
+void MovementLogic::refresh()
+{
+	move(_moveCode);
+}
+
+void MovementLogic::pause(unsigned long duration)
+{
+	move(0, 0, duration);
+}
+
+void MovementLogic::move(uint8_t moveCode)
 {
 	_moveCode = moveCode;
 	
@@ -120,46 +126,46 @@ void MovementModule::move(uint8_t moveCode)
 			move(_speed, _speed - 30, 8000);
 			break;
 		case 15:
-			move(255, 255,  random(2047) + 2000); // 2047 + 2000
+			move(255, 255,  random(2047) + 100); // 2047 + 2000
 			break;
 		// Left
 		case 20:
-			move(-_speed, _speed, random(511) + 400); // 511 + 400
+			move(-_speed, _speed, random(411) + 100); // 511 + 400
 			break;
 		case 22:
-			move(-255, 0, random(2047) + 400); // 2047 + 400
+			move(-255, 0, random(1023) + 100); // 2047 + 400
 			break;
 		case 23:
-			move(0, 255, random(2047) + 400);
+			move(0, 255, random(1023) + 100);
 			break;
 		case 25:
-			move(-255, 255, random(2047) + 400);
+			move(-255, 255, random(1023) + 100);
 			break;
 		// Right
 		case 30:
-			move(_speed, -_speed, random(511) + 384); // 511 + 400
+			move(_speed, -_speed, random(411) + 100); // 511 + 400
 			break;
 		case 32:
-			move(255, 0, random(2047) + 400); // 2047 + 400
+			move(255, 0, random(1023) + 100); // 2047 + 400
 			break;
 		case 33:
-			move(0, -255, random(2047) + 400);
+			move(0, -255, random(1023) + 100);
 			break;
 		case 35:
-			move(255, -255, random(2047) + 400);
+			move(255, -255, random(1023) + 100);
 			break;
 		// Reverse
 		case 40:
-			move(-_speed, -_speed, random(2047) + 1000); // 2047 + 1000
+			move(-_speed, -_speed, random(1023) + 100); // 2047 + 1000
 			break;
 		case 42:
-			move(-_speed, -_speed + 30, random(1500) + 500);
+			move(-_speed, -_speed + 30, random(1023) + 100);
 			break;
 		case 43:
-			move(-_speed + 30, -_speed, random(1500) + 500);
+			move(-_speed + 30, -_speed, random(1023) + 100);
 			break;
 		case 45:
-			move(-255, -255, random(2047) + 1000);
+			move(-255, -255, random(2047) + 100);
 			break;
 		// ERROR, debug
 		default:
@@ -168,7 +174,7 @@ void MovementModule::move(uint8_t moveCode)
 	}
 }
 
-void MovementModule::move(int leftSpeed, int rightSpeed, unsigned long duration)
+void MovementLogic::move(int leftSpeed, int rightSpeed, unsigned long duration)
 {
 	_motorDriver->move(leftSpeed, rightSpeed);
 	_timer.setDuration(duration);
@@ -178,6 +184,14 @@ void MovementModule::move(int leftSpeed, int rightSpeed, unsigned long duration)
 
 
 
+
+
+
+// Randomly picks one value from the array
+int MovementLogic::roll(int arraySize, int *array)
+{
+	return array[random(arraySize)];
+}
 
 
 

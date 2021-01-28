@@ -8,7 +8,7 @@ class LightSensor
 {
 	public:
 		LightSensor(uint8_t pinIn);
-		bool isObstacleDetected();
+		bool isTriggered();
 		
     private:
         const uint8_t _pinIn;

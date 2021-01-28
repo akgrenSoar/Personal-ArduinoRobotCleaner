@@ -10,6 +10,10 @@ SonicSensor::SonicSensor(uint8_t trigPin, uint8_t echoPin)
 	pinMode(_echoPin, INPUT); // Sets the echoPin as an Input
 }
 
+/**
+ * Read sensor distance (cm)
+ * Using rough and less accurate conversion
+ */
 unsigned long SonicSensor::getDistance()
 {
 	digitalWrite(_trigPin, LOW);
@@ -25,3 +29,4 @@ unsigned long SonicSensor::getDistance()
   
     return distance;
 }
+

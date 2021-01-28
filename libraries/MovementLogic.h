@@ -1,15 +1,16 @@
 
-#ifndef MovementModule_h
-#define MovementModule_h
+#ifndef MovementLogic_h
+#define MovementLogic_h
 
 #include "Arduino.h"
 #include "MotorDriver.h"
 #include "Timer.h"
 
-class MovementModule
+class MovementLogic
 {
 	public:
-		MovementModule(MotorDriver *motorDriver);
+		MovementLogic(MotorDriver *motorDriver, uint8_t speed = 255);
+		
 		uint8_t getSpeed();
 		void setSpeed(uint8_t speed);
 		uint8_t getDirection();

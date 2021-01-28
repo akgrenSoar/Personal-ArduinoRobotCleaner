@@ -2,6 +2,8 @@
 #include "Arduino.h"
 #include "Timer.h"
 
+///////////////Constructor///////////////
+
 Timer::Timer()
 {
 	_duration = 0;
@@ -13,6 +15,8 @@ Timer::Timer(unsigned long millis)
 	_duration = millis;
 }
 
+///////////////Getter and Setter///////////////
+
 unsigned long Timer::getDuration()
 {
     return _duration;
@@ -23,14 +27,29 @@ void Timer::setDuration(unsigned long millis)
     _duration = millis;
 }
 
-// Start/Restart the timer
+///////////////Methods///////////////
+
+// Reset timer
+void Timer::reset()
+{
+	_startTime = 0;
+}
+
+// Start timer
 void Timer::start()
 {
-	_startTime = millis();
+	if (_startTime == 0 || isExpired()) _startTime = millis();
+}
+
+// Restart timer
+void Timer::restart()
+{
+	reset();
+	start();
 }
 
 // Returns elapsed time since start
-unsigned long Timer::split()
+unsigned long Timer::timeElapsed()
 {
 	return millis() - _startTime;
 }
@@ -38,6 +57,6 @@ unsigned long Timer::split()
 // When elapsed time exceeds timer duration
 bool Timer::isExpired()
 {
-	return (split() > _duration) ? true : false;
+	return (timeElapsed() > _duration) ? true : false;
 }
 

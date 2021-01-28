@@ -7,13 +7,14 @@
 class TouchSensor {
 
   public:
-	TouchSensor(uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t pin4);
-	uint8_t getButtonReleased();
-    uint8_t getButtonPressed();
+	TouchSensor(uint8_t pinIn);
+	bool getState();
+    bool isPressed();
+	bool isReleased();
 
   private:
-    const uint8_t _pins[4];
-	bool isButtonPressed(uint8_t buttonNumber);
+    const uint8_t _pinIn;
+	bool prevState;
 
 };
 

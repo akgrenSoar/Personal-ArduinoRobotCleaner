@@ -14,7 +14,6 @@ class SonicSensor {
 		const uint8_t _trigPin;
 		const uint8_t _echoPin;
 
-  
 };
 
 #endif

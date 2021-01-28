@@ -1,119 +1,114 @@
-#include <DirectionTeller.h>
-#include <LightSensor.h>
-#include <MotorDriver.h>
-#include <MovementModule.h>
+
 #include <SonicSensor.h>
-#include <Timer.h>
 #include <TouchSensor.h>
+#include <MotorDriver.h>
+#include <DirectionLogic.h>
+#include <MovementLogic.h>
+#include <Timer.h>
 
+// Program Configuration
+const unsigned long RUN_DURATION = 60000UL * 30; // 30 minutes
+const uint8_t ROBOT_SPEED = 255; // 0-255
 
+SonicSensor frontSonic (A0, A1); // TriggerPin, EchoPin
+SonicSensor leftSonic (4, 5); // TriggerPin, EchoPino
+SonicSensor rightSonic (7, 8); // TriggerPin, EchoPin
+TouchSensor button1 (A2); // InputPin
+TouchSensor button2 (A3); // InputPin
+TouchSensor button3 (A4); // InputPin
+TouchSensor button4 (A5); // InputPin
+MotorDriver motorDriver (9, 6, 11, 10); // Digital_PWM_1, Digital_PWM_2 (Right), Digital_PWM_4, Digital_PWM_3 (Left)
 
-// Initialize Inputs and Output devices
-LightSensor frontSensor (12); // Input
-SonicSensor leftSonic (7, 8); // Trigger, Echo
-SonicSensor rightSonic (9, 10); // Trigger, Echo
-TouchSensor touchMenu (A2, A3, A4, A5); // Input1, Input2, Input3, Input4
-MotorDriver motorDriver (5, 4, 3, 2); // Analog1, Digital1, Analog2, Digital2
+// Program constants (Do not touch)
+#define DIR_STOP 0
+#define DIR_FORWARD 1
+#define DIR_LEFT 2
+#define DIR_RIGHT 3
+#define DIR_REVERSE 4
 
-// Initialize program modules
-DirectionTeller directionTeller (&frontSensor, &leftSonic, &rightSonic);
-MovementModule wheel (&motorDriver);
-
-// Initialize Program Variables
-const unsigned long RUN_DURATION = 60000UL * 10;
-Timer timer;
+// Additional modules and variables (Do not touch)
+DirectionLogic directionLogic (&frontSonic, &leftSonic, &rightSonic);
+MovementLogic wheel (&motorDriver, ROBOT_SPEED);
+Timer timer(RUN_DURATION);
 bool isEnabled;
 bool isPausedBetweenMovements;
 
 void setup()
 {
-  // put your setup code here, to run once:
-  Serial.begin(9600); // Starts the serial communication
+  Serial.begin(9600);
+  randomSeed((unsigned long) (analogRead(A0) % 47 + 1) * (analogRead(A1) % 41 + 1) * (analogRead(A6) % 43 + 1) * (analogRead(A7) % 37 + 1));
   resetRobot();
-  unsigned long seed = (analogRead(A0) % 47 + 1) * (analogRead(A1) % 41 + 1) * (analogRead(A6) % 43 + 1) * (analogRead(A7) % 37 + 1);
-  randomSeed(seed);
 }
 
 void resetRobot()
 {
-  timer.setDuration(RUN_DURATION);
+  timer.reset();
   isEnabled = false;
   isPausedBetweenMovements = false;
   wheel.setDirection(0);
-  wheel.setSpeed(255);
 }
 
-void userInterface(uint8_t buttonPressed)
+void userInput()
 {
-  switch (buttonPressed)
-  {
-    case 0:
-      // do nothing
-      break;
-    case 1:
-      timer.setDuration(timer.getDuration() + RUN_DURATION);
-      break;
-    case 2:
-      resetRobot();
-      break;
-    case 3:
-      isEnabled = !isEnabled;
-      break;
-    case 4:
-      wheel.setSpeed( (wheel.getSpeed() < 200) ? 255 : wheel.getSpeed() - 20 );
-      wheel.refresh();
-      break;
-    default:
-      break;
+  if (button1.isPressed() || button2.isPressed() || button3.isPressed() || button4.isPressed()) {
+    bool wasEnabled = isEnabled;
+    resetRobot();
+    while(button1.getState() || button2.getState() || button3.getState() || button4.getState()) delay(32);
+    isEnabled = !wasEnabled;
+    timer.start();
   }
 }
 
-int pauseBeforeMove(int tentativeDirection) {
-    if (isPausedBetweenMovements == false) {
-      isPausedBetweenMovements = true;
-      wheel.pause(230);
-      return 5;
-    } else {
-      isPausedBetweenMovements = false;
-      return tentativeDirection;
-    }
-}
-
-// 0 stop, 1 forward, 2 left, 3 right, 4 reverse, 5 no change
-int determineDirection()
-{
-  
-  // Direction has expired, change direction
-  if (wheel.isExpired()) {
-    return pauseBeforeMove(directionTeller.getDirection());
-  }
-  
-  // Direction override due to priority
-  int prevDirection = wheel.getDirection();
-  int currDirection = directionTeller.getDirection();
-  if (prevDirection == 1 && currDirection != 1) {
-    wheel.setDirection(0);
-    isPausedBetweenMovements = true;
-    wheel.pause(230);
-    return 5;
-  }
-  
-  // Not expired, no change in direction
-  return 5;
+void pauseBetweenMovements() {
+  isPausedBetweenMovements = true;
+  wheel.setDirection(DIR_STOP);
+  wheel.pause(230);
 }
 
 void loop()
 {
-  // Check for user input
-  userInterface(touchMenu.getButtonReleased());
-
-  if (isEnabled) {
-    wheel.setDirection(determineDirection());
-  } else {
-    if (wheel.getDirection() != 0) wheel.setDirection(0);
-  }
-
   // Mini pause
   delay(32);
+  
+  // Check for user input
+  userInput();
 
+  // Stop running if not enabled
+  if (!isEnabled) {
+    if (wheel.getDirection() != DIR_STOP) wheel.setDirection(DIR_STOP);
+    return;
+  }
+  
+  // Stop running if timer is expired
+  if (timer.isExpired()) {
+    isEnabled = false;
+    if (wheel.getDirection() != DIR_STOP) wheel.setDirection(DIR_STOP);
+    return;
+  }
+
+  // Robot is paused, perform next movement
+  if (wheel.isExpired() && isPausedBetweenMovements) {
+    isPausedBetweenMovements = false;
+    wheel.setDirection(directionLogic.getDirection());
+    return;
+  }
+  
+  // Current movement has expired, pause before next movement
+  if (wheel.isExpired() && !isPausedBetweenMovements) {
+    pauseBetweenMovements();
+    return;
+  }
+  
+  int prevDirection = wheel.getDirection();
+  int currDirection = directionLogic.getDirection();
+   
+  // All movements has priority over DIR_FORWARD, pause before changing movement
+  if (prevDirection == DIR_FORWARD && currDirection != DIR_FORWARD) {
+    pauseBetweenMovements();
+    return;
+  }
+  
+  // Continue in current direction
+  // Nothing to do
+  return;
 }

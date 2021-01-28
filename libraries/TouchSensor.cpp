@@ -2,45 +2,54 @@
 #include "Arduino.h"
 #include "TouchSensor.h"
 
-TouchSensor::TouchSensor(uint8_t pin1, uint8_t pin2, uint8_t pin3, uint8_t pin4)
-:	_pins{pin1, pin2, pin3, pin4}
+TouchSensor::TouchSensor(uint8_t pinIn)
+:	_pinIn(pinIn)
 {	
-    pinMode(_pins[0], INPUT);
-    pinMode(_pins[1], INPUT);
-    pinMode(_pins[2], INPUT);
-    pinMode(_pins[3], INPUT);
+    pinMode(_pinIn, INPUT);
+	prevState = false;
 }
 
-uint8_t TouchSensor::getButtonReleased()
+/**
+ * Check the current button state
+ * 
+ * Returns true if isPressed, false if notPressed
+ */
+bool TouchSensor::getState()
 {
-	uint8_t memory = 0;
-	uint8_t result = getButtonPressed();
-	
-	while (result != 0) {
-		memory = result;
-		result = getButtonPressed();
-	}
-	
-	return memory;
+	return (digitalRead(_pinIn) == HIGH) ? true : false;
 }
 
-uint8_t TouchSensor::getButtonPressed()
+/**
+ * Check for change in button state from notPressed to isPressed
+ *
+ * Returns true if there is a state change from notPressed to isPressed
+ * Otherwise, returns false.
+ */
+bool TouchSensor::isPressed()
 {
-	// Check buttons 1 to 4
-	for (uint8_t i = 1; i < 5; i++) {
-		if (isButtonPressed(i)) {
-			return i;
-		}
-	}
+	bool isPressed = getState();
+	bool wasPressed = prevState;
+	prevState = isPressed;
 	
-	// No buttons pressed
-	return 0;
+	return (!wasPressed && isPressed) ? true : false;
 }
 
-bool TouchSensor::isButtonPressed(uint8_t buttonNumber)
+/**
+ * Check for change in button state from isPressed to notPressed
+ *
+ * Returns true if there is a state change from isPressed to notPressed
+ * Otherwise, returns false.
+ */
+bool TouchSensor::isReleased()
 {
-	return (digitalRead(_pins[buttonNumber - 1]) == HIGH) ? true : false;
+	bool isPressed = getState();
+	bool wasPressed = prevState;
+	prevState = isPressed;
+	
+	return (wasPressed && !isPressed) ? true : false;
 }
+
+
 
 
 
