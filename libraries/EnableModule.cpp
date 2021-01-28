@@ -5,14 +5,14 @@
 EnableModule::EnableModule()
 {
     programTimer = 0;
-    programRunDuration = 10 * 60000L; // 1 minute
+    programRunDuration = 10 * 60000L; // 10 minute
     programIsRunning = false; // Not running
 }
 
 void EnableModule::reset()
 {
     programTimer = 0;
-    programRunDuration = 10 * 60000L; // 1 minute
+    programRunDuration = 10 * 60000L; // 10 minute
     programIsRunning = false; // Not running
 }
 

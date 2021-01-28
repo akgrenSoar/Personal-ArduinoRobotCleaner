@@ -7,13 +7,14 @@ class TouchCapacitive {
 
   public:
 	TouchCapacitive(int pin1, int pin2, int pin3, int pin4);
+	void block(int duration);
     uint8_t getButtonPressed();
 
   private:
-	int _delayTime;
     int _pins[4];
+	bool _isBufferUsed;
+	uint8_t _bufferValue;
 	bool isButtonPressed(uint8_t buttonNumber);
-	void pauseWhilePressed(uint8_t buttonNumber);
 
 };
 

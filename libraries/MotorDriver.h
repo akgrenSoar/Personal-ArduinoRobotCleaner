@@ -2,12 +2,15 @@
 #define MotorDriver_h
 
 #include "Arduino.h"
+#include "TouchCapacitive.h"
 
 class MotorDriver
 {
+	TouchCapacitive *_touchCapacitive;
+	
 	
 	public:
-		MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D);
+		MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D, TouchCapacitive *touchCapacitive);
 		void move(int leftSpeed, int rightSpeed, int duration);
 	
 	private:

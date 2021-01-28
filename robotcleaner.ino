@@ -11,15 +11,16 @@ UltrasonicSensor leftSonic (7, 8); // Trigger, Echo
 UltrasonicSensor rightSonic (9, 10); // Trigger, Echo
 LightSensor frontSensor (12); // Input
 
-MotorDriver motorDriver (3, 2, 5, 4); // Analog1, Digital1, Analog2, DIgital2
 TouchCapacitive touchMenu (A2, A3, A4, A5); // Input1, Input2, Input3, Input4
-DirectionModule directionModule (motorDriver, frontSensor, leftSonic, rightSonic);
+MotorDriver motorDriver (3, 2, 5, 4, &touchMenu); // Analog1, Digital1, Analog2, Digital2
+
+DirectionModule directionModule (&motorDriver, &frontSensor, &leftSonic, &rightSonic, &touchMenu);
 EnableModule enableModule;
 
 int moveSpeed = 255;
 
 void resetRobot() {
-  motorDriver.move(0, 0, 0);
+  directionModule.stop();
   enableModule.reset();
   moveSpeed = 255;
 }
@@ -31,6 +32,17 @@ void setup() {
 }
 
 void userInterface(uint8_t buttonPressed) {
+
+  if (buttonPressed != 0) {
+    // 1. Stop for 300ms to acknowledge button is pressed
+    directionModule.stop();
+    touchMenu.block(300);
+    // 2. User can make correction to the button pressed within that 500ms
+    uint8_t newButtonPressed = touchMenu.getButtonPressed();
+    if (newButtonPressed != 0) {
+      buttonPressed = newButtonPressed;
+    }
+  }
 
   switch (buttonPressed) {
     case 1:
@@ -49,6 +61,7 @@ void userInterface(uint8_t buttonPressed) {
       moveSpeed = (moveSpeed < 130) ? 255 : moveSpeed - 35;
       Serial.println("Pressed Button 4 (Decrease move speed)");
       break;
+    case 0:
     default:
       return;
   }
@@ -56,17 +69,14 @@ void userInterface(uint8_t buttonPressed) {
 
 
 void loop() {
-
-  // Check for user input
-  userInterface(touchMenu.getButtonPressed());
   
-  // Mini pause to save battery
+  // Mini pause to save battery. Robot is only responsive every 100ms
   delay(100);
 
   // Check for user input
   userInterface(touchMenu.getButtonPressed());
 
-  // 
+  // Move
   if (enableModule.isEnabled()) {
     directionModule.run(moveSpeed);
   } else {

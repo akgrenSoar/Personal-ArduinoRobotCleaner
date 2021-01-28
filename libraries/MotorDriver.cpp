@@ -1,8 +1,11 @@
 
 #include "Arduino.h"
 #include "MotorDriver.h"
+#include "TouchCapacitive.h"
 
-MotorDriver::MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D){
+MotorDriver::MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D, TouchCapacitive *touchCapacitive)
+:	_touchCapacitive(touchCapacitive)
+{
 	
 	_pin1A = pin1A;
 	_pin1D = pin1D;
@@ -31,7 +34,7 @@ void MotorDriver::rightWheel(uint8_t speed, uint8_t direction)
 
 // Left speed -255 to 255
 // Right speed -255 to 255
-// Duration is calculated as the range of (500ms to 2^duration+500ms), duration = 0 to disable
+// Duration is calculated as the range of (500ms to duration+500ms), duration = 0 to disable
 void MotorDriver::move(int leftSpeed, int rightSpeed, int duration)
 {
 	if (leftSpeed >= 0) {
@@ -47,7 +50,7 @@ void MotorDriver::move(int leftSpeed, int rightSpeed, int duration)
 	}
 	
 	if (duration > 0) {
-		delay((rand() & duration) + 500);
+		_touchCapacitive->block((rand() & duration) + 500);
 		move(0, 0, 0);
 	}
 }
