@@ -12,15 +12,14 @@ UltrasonicSensor leftSonic (7, 8); // Trigger, Echo
 UltrasonicSensor rightSonic (9, 10); // Trigger, Echo
 LightSensor frontSensor (12); // Input
 TouchCapacitive touchMenu (A2, A3, A4, A5); // Input1, Input2, Input3, Input4
-MotorDriver motorDriver (3, 2, 5, 4); // Analog1, Digital1, Analog2, Digital2
+MotorDriver motorDriver (5, 4, 3, 2); // Analog1, Digital1, Analog2, Digital2
 
 // Initialize program modules
 DirectionModule directionModule (&frontSensor, &leftSonic, &rightSonic);
 EnableModule enableModule;
 
 // Initialize Program Variables
-int moveSpeed = 255;
-Wheel wheel(&motorDriver, moveSpeed);
+Wheel wheel(&motorDriver);
 
 void setup() {
   // put your setup code here, to run once:
@@ -29,8 +28,8 @@ void setup() {
 
 void resetRobot() {
   enableModule.reset();
-  moveSpeed = 255;
   wheel.pause();
+  wheel.setSpeed(255);
 }
 
 uint8_t getInput() {
@@ -40,6 +39,7 @@ uint8_t getInput() {
     delay(100);
     buttonPressed = temp;
     temp = touchMenu.getButtonPressed();
+    wheel.pause();
   };
   return buttonPressed;
 }
@@ -47,50 +47,64 @@ uint8_t getInput() {
 void userInterface(uint8_t buttonPressed) {
 
   if (buttonPressed != 0) {
-    wheel.pause();
-    delay(300);
+    wheel.stall(500);
   }
 
   switch (buttonPressed) {
     case 1:
-      enableModule.addDuration(10);
-      Serial.println("Pressed Button 1 (Add 10 minutes)");
+      enableModule.setDuration( enableModule.getDuration() + 15 );
+      Serial.print("Duration: ");
+      Serial.print(enableModule.getDuration());
+      Serial.println(" minutes");
       break;
     case 2:
       resetRobot();
-      Serial.println("Pressed Button 2 (Reset)");
+      Serial.println("Status: Reset");
       break;
     case 3:
-      enableModule.toggleStart();
-      Serial.println("Pressed Button 3 (Toggle start/stop)");
+      if (!enableModule.isRunning()) {
+        enableModule.start();
+        Serial.println("Status: Start");
+      } else {
+        enableModule.stop();
+        Serial.println("Status: Stop");
+      }
       break;
     case 4:
-      moveSpeed = (moveSpeed < 165) ? 255 : moveSpeed - 35;
-      wheel.setSpeed(moveSpeed);
-      Serial.println("Pressed Button 4 (Decrease move speed)");
+      wheel.setSpeed( (wheel.getSpeed() < 200) ? 255 : wheel.getSpeed() - 20 );
+      Serial.print("Speed: ");
+      Serial.println(wheel.getSpeed());
       break;
     case 0:
     default:
-      return;
+      break;
   }
 }
 
-void verifyAndSetDirection() {
-  
+void setDirection() {
+
   uint8_t nextDirection = directionModule.getDirection();
 
-  // Direction has expired, set next direction
-  if (wheel.isExpired()) {
-    delay(600);
-    wheel.setDirectionAndRenew(nextDirection);
-  }
-
-  // Obstacle detected while moving forward, overwrite direction
-  if (wheel.getDirection() == 1 && wheel.getDirection() != nextDirection) {
-    wheel.pause();
-    delay(500);
-    wheel.setDirectionAndRenew(nextDirection);
+  // Expired and stalled, change direction
+  if (wheel.isStalled()) {
+    if (wheel.isExpired()) {
+      Serial.print("Direction: ");
+      Serial.println(nextDirection);
+      wheel.setDirection(nextDirection);
+    }
     
+  } else {
+    // Expired, going into stall
+    if (wheel.isExpired()) {
+      Serial.println("Expired Stall");
+      wheel.stall(600);
+    }
+    
+    // Obstacle detected while moving forward, overwrite direction
+    if (wheel.getDirection() == 1 && wheel.getDirection() != nextDirection) {
+      Serial.println("Direction Stall");
+      wheel.stall(500);
+    }
   }
   
 }
@@ -101,16 +115,16 @@ void loop() {
   userInterface(getInput());
 
   // Movement enabled
-  if (enableModule.isEnabled()) {
-    verifyAndSetDirection();
+  if (enableModule.test()) {
+    setDirection();
     wheel.run();
 
-  // Movement disabled
+    // Movement disabled
   } else {
     wheel.pause();
   }
-  
+
   // Mini pause
   delay(32);
-  
+
 }

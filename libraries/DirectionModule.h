@@ -18,8 +18,6 @@ class DirectionModule
 		int getDirection();
 		
     private:
-		uint8_t _previousDirection;
-		uint8_t _currentDirection;
 		int readUltrasonic();
 		int readUltrasonicAndDoubleConfirm();
 };

@@ -30,7 +30,7 @@ void TouchCapacitive::block(int duration)
 				_bufferValue = i;
 			}
 		}
-		delay(32);
+		delay(100);
 	}
 }
 

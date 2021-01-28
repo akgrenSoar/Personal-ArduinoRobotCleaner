@@ -10,7 +10,7 @@ UltrasonicSensor::UltrasonicSensor(uint8_t trigPin, uint8_t echoPin)
 	pinMode(_echoPin, INPUT); // Sets the echoPin as an Input
 }
 
-int UltrasonicSensor::getDistance()
+unsigned long UltrasonicSensor::getDistance()
 {
 	digitalWrite(_trigPin, LOW);
     delayMicroseconds(2);
@@ -19,9 +19,9 @@ int UltrasonicSensor::getDistance()
     digitalWrite(_trigPin, LOW);
     
     // Reads the echoPin, returns the sound wave travel time in microseconds
-    int duration = pulseIn(_echoPin, HIGH);
+    unsigned long duration = pulseIn(_echoPin, HIGH);
     // Calculating the distance
-    int distance = duration >> 6; // duration / 58.2
+    unsigned long distance = duration >> 6; // duration / 58.2
   
     return distance;
 }

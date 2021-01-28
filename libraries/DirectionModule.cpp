@@ -13,22 +13,40 @@ DirectionModule::DirectionModule(
 		_leftUltrasonicSensor(leftSensor),
 		_rightUltrasonicSensor(rightSensor)
 {
-	_previousDirection = 0;
-	_currentDirection = 0; // 0 Stop 1 forward 2 left 3 right 4 reverse
+	// Nothing to initialize
 }
 
 
 // Returns 1 Forward 2 Left 3 Right 4 Reverse
 int DirectionModule::getDirection()
 {
-	int tentativeDirection = readUltrasonicAndDoubleConfirm();
 	bool hasFrontObstacle = _frontLightSensor->isObstacleDetected();
 	
-	if (hasFrontObstacle && tentativeDirection == 1) {
+	if (hasFrontObstacle) {
 		return 4;
 	} else {
-		return tentativeDirection;
+		return readUltrasonicAndDoubleConfirm();
 	}
+}
+
+// Returns 1 Forward 2 Left 3 Right 4 Reverse
+int DirectionModule::readUltrasonic()
+{
+	uint32_t leftDistance = _leftUltrasonicSensor->getDistance();
+	uint32_t rightDistance = _rightUltrasonicSensor->getDistance();
+	
+	uint32_t _sd = 17;
+	
+    if (leftDistance > _sd && rightDistance > _sd) {
+        return 1; // Move forward
+    } else if (leftDistance <= _sd && rightDistance <= _sd) {
+        return 4; // Reverse
+    } else if (leftDistance > _sd && rightDistance <= _sd) {
+        return 2; // Turn left
+    } else if (leftDistance <= _sd && rightDistance > _sd) {
+        return 3; // Turn right
+    }
+	
 }
 
 // Returns 1 Forward 2 Left 3 Right 4 Reverse
@@ -49,25 +67,5 @@ int DirectionModule::readUltrasonicAndDoubleConfirm()
 	
 	return currDirection;
 }
-
-// Returns 1 Forward 2 Left 3 Right 4 Reverse
-int DirectionModule::readUltrasonic()
-{
-	int leftDistance = _leftUltrasonicSensor->getDistance();
-	int rightDistance = _rightUltrasonicSensor->getDistance();
-	
-    if (leftDistance > 19 && rightDistance > 19) {
-        return 1; // Move forward
-    } else if (leftDistance < 20 && rightDistance < 20) {
-        return 4; // Reverse
-    } else if (leftDistance > 19 && rightDistance < 20) {
-        return 2; // Turn left
-    } else if (leftDistance < 20 && rightDistance > 19) {
-        return 3; // Turn right
-    }
-	
-}
-
-
 
 

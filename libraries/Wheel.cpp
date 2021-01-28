@@ -4,86 +4,80 @@
 
 #include "MotorDriver.h"
 
-Wheel::Wheel(MotorDriver *motorDriver, uint8_t speed)
-	:	_motorDriver(motorDriver), _speed(speed)
+Wheel::Wheel(MotorDriver *motorDriver)
+	:	_motorDriver(motorDriver)
 {
-	
+    // Run parameters
 	_leftSpeed = 0;
 	_rightSpeed = 0;
 	_endTime = 0;
 	
+    // Logic/Control parameters
+    _speed = 255;
 	_prevDirection = 0;
+    _refreshSignal = false;
 	_isPaused = true;
 	_isExpired = true;
 	
+    // Initialize random
 	srand(millis());
+    Serial.println("Initilializing srand() in Wheel class");
 	Serial.println(rand());
 	Serial.println(rand());
 	Serial.println(rand());
-}
-
-bool Wheel::isExpired()
-{
-	return _isExpired;
 }
 
 void Wheel::setSpeed(uint8_t speed) {
+    _leftSpeed -= _speed - speed;
+    _rightSpeed -= _speed - speed;
 	_speed = speed;
-	uint8_t direction = _prevDirection;
-	_prevDirection = 0;
-	setDirectionAndRenew(direction);
+    _refreshSignal = true;
 }
 
-void Wheel::set(int leftSpeed, int rightSpeed, uint16_t duration)
+uint8_t Wheel::getSpeed()
 {
-	_leftSpeed = leftSpeed;
-	_rightSpeed = rightSpeed;
-	_endTime = millis() + duration;
+    return _speed;
 }
 
-void Wheel::setDirectionAndRenew(uint8_t direction)
+void Wheel::setDirection(uint8_t direction)
 {
 	int random = rand();
 	
 	switch (direction) {
 		case 1: // Forward
-			Serial.println("Forward");
 			random %= 3;
 			if (random == 0) {
-				set(_speed - 30, _speed - 10, 16384);
+				setRunParameters(_speed - 30, _speed - 10, 16384);
 			} else if (random == 1) {
-				set(_speed, _speed - 40, 16384);
+				setRunParameters(_speed, _speed - 40, 16384);
 			} else {
-				set(_speed, _speed - 10, 16384);
+				setRunParameters(_speed, _speed - 10, 16384);
 			}
 			break;
 		case 2: // Left
-			Serial.println("TurnLeft");
 			if (_prevDirection != direction) {
-				set(-_speed, 0, ((random & 0x2FF) + 400));
+				setRunParameters(-_speed, 50, ((random & 0x2FF) + 400));
 			} else {
-				set(-_speed, _speed, ((random & 0x3FF) + 500));
+				setRunParameters(-_speed, _speed, ((random & 0x3FF) + 500));
 			}
 			break;
 		case 3: // Right
-			Serial.println("TurnRight");
 			if (_prevDirection != direction) {
-				set(0, -_speed, ((random & 0x2FF) + 400));
+				setRunParameters(50, -_speed, ((random & 0x2FF) + 400));
 			} else {
-				set(_speed, -_speed, ((random & 0x3FF) + 500));
+				setRunParameters(_speed, -_speed, ((random & 0x3FF) + 500));
 			}
 			break;
 		case 4: // Reverse
-			Serial.println("Reverse");
 			if (_prevDirection != direction) {
-				(rand() & 0x01) ? set(-_speed, 0, ((random & 0x2FF) + 400)) : set(0, -_speed, ((random & 0x2FF) + 400));
+				(rand() & 0x01) ? setRunParameters(-_speed, 50, ((random & 0x2FF) + 400)) : setRunParameters(50, -_speed, ((random & 0x2FF) + 400));
 			} else {
-				(rand() & 0x01) ? set(-_speed, _speed, ((random & 0x3FF) + 500)) : set(_speed, -_speed, ((random & 0x3FF) + 500));
+				(rand() & 0x01) ? setRunParameters(-_speed, _speed, ((random & 0x3FF) + 500)) : setRunParameters(_speed, -_speed, ((random & 0x3FF) + 500));
 			}
 			break;
 	}
 	
-	_isPaused = true;
+    _refreshSignal = true; // To refresh signal
 	_isExpired = false;
 	_prevDirection = direction;
 }
@@ -98,8 +92,32 @@ void Wheel::pause()
 	// Currently running, pause it.
 	if (!_isPaused) {
 		_isPaused = true;
+		_prevDirection = 0;
 		_motorDriver->move(0, 0);
+        return;
 	}
+}
+
+bool Wheel::isPaused()
+{
+    return _isPaused;
+}
+
+void Wheel::stall(uint32_t duration)
+{
+    _refreshSignal = true; // To refresh signal
+	_isExpired = false;
+    setRunParameters(0, 0, duration);
+}
+
+bool Wheel::isStalled()
+{
+    return (_leftSpeed == 0 && _rightSpeed == 0) ? true : false;
+}
+
+bool Wheel::isExpired()
+{
+	return _isExpired;
 }
 
 void Wheel::run()
@@ -122,4 +140,21 @@ void Wheel::run()
 		_motorDriver->move(_leftSpeed, _rightSpeed);
 		return;
 	}
+    
+    // Direction changed, update signal
+    if (_refreshSignal) {
+        _refreshSignal = false;
+		_motorDriver->move(_leftSpeed, _rightSpeed);
+    }
+    
+    // Already running, do nothing
 }
+
+void Wheel::setRunParameters(int leftSpeed, int rightSpeed, uint32_t duration)
+{
+	_leftSpeed = leftSpeed;
+	_rightSpeed = rightSpeed;
+	_endTime = millis() + duration;
+}
+
+

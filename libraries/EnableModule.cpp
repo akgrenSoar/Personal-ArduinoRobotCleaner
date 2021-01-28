@@ -4,36 +4,51 @@
 
 EnableModule::EnableModule()
 {
-    programTimer = 0;
-    programRunDuration = 10 * 60000L; // 10 minute
-    programIsRunning = false; // Not running
+    _startTime = 0;
+    _runDuration = 10 * 60000L; // 10 minute
+    _isRunning = false; // Not running
 }
 
 void EnableModule::reset()
 {
-    programTimer = 0;
-    programRunDuration = 10 * 60000L; // 10 minute
-    programIsRunning = false; // Not running
+    _startTime = 0;
+    _runDuration = 10 * 60000L; // 10 minute
+    _isRunning = false; // Not running
 }
 
-uint32_t EnableModule::addDuration(uint32_t minutes)
+int EnableModule::getDuration()
 {
-    programRunDuration += minutes * 60000L;
+    return _runDuration / 60000L;
 }
 
-void EnableModule::toggleStart()
+void EnableModule::setDuration(int minutes)
 {
-	if (programTimer == 0) programTimer = millis();
-	programIsRunning = !programIsRunning;
+    _runDuration = 60000L * minutes;
 }
 
-bool EnableModule::isEnabled()
+bool EnableModule::isExpired()
 {
-	return (!programIsRunning || isTimeUp()) ? false : true;
+	return (millis() - _startTime > _runDuration) ? true : false;
 }
 
-bool EnableModule::isTimeUp()
+void EnableModule::start()
 {
-	return (millis() - programTimer > programRunDuration) ? true : false;
+	if (_startTime == 0) _startTime = millis();
+	_isRunning = true;
+}
+
+void EnableModule::stop()
+{
+    _isRunning = false;
+}
+
+bool EnableModule::isRunning()
+{
+    return _isRunning;
+}
+
+bool EnableModule::test()
+{
+	return (!isRunning() || isExpired()) ? false : true;
 }
 
