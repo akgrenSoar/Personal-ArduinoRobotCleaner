@@ -5,43 +5,50 @@
 #include <MotorDriver.h>
 #include <TouchCapacitive.h>
 #include <UltrasonicSensor.h>
+#include <Wheel.h>
 
-
+// Initialize Inputs and Output devices
 UltrasonicSensor leftSonic (7, 8); // Trigger, Echo
 UltrasonicSensor rightSonic (9, 10); // Trigger, Echo
 LightSensor frontSensor (12); // Input
-
 TouchCapacitive touchMenu (A2, A3, A4, A5); // Input1, Input2, Input3, Input4
-MotorDriver motorDriver (3, 2, 5, 4, &touchMenu); // Analog1, Digital1, Analog2, Digital2
+MotorDriver motorDriver (3, 2, 5, 4); // Analog1, Digital1, Analog2, Digital2
 
-DirectionModule directionModule (&motorDriver, &frontSensor, &leftSonic, &rightSonic, &touchMenu);
+// Initialize program modules
+DirectionModule directionModule (&frontSensor, &leftSonic, &rightSonic);
 EnableModule enableModule;
 
+// Initialize Program Variables
 int moveSpeed = 255;
-
-void resetRobot() {
-  directionModule.stop();
-  enableModule.reset();
-  moveSpeed = 255;
-}
+Wheel wheel(&motorDriver, moveSpeed);
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); // Starts the serial communication
-  resetRobot();
+}
+
+void resetRobot() {
+  enableModule.reset();
+  moveSpeed = 255;
+  wheel.pause();
+}
+
+uint8_t getInput() {
+  uint8_t buttonPressed = 0;
+  uint8_t temp = touchMenu.getButtonPressed();
+  while (temp != 0) {
+    delay(100);
+    buttonPressed = temp;
+    temp = touchMenu.getButtonPressed();
+  };
+  return buttonPressed;
 }
 
 void userInterface(uint8_t buttonPressed) {
 
   if (buttonPressed != 0) {
-    // 1. Stop for 300ms to acknowledge button is pressed
-    directionModule.stop();
-    touchMenu.block(300);
-    // 2. User can make correction to the button pressed within that 500ms
-    uint8_t newButtonPressed = touchMenu.getButtonPressed();
-    if (newButtonPressed != 0) {
-      buttonPressed = newButtonPressed;
-    }
+    wheel.pause();
+    delay(300);
   }
 
   switch (buttonPressed) {
@@ -58,7 +65,8 @@ void userInterface(uint8_t buttonPressed) {
       Serial.println("Pressed Button 3 (Toggle start/stop)");
       break;
     case 4:
-      moveSpeed = (moveSpeed < 130) ? 255 : moveSpeed - 35;
+      moveSpeed = (moveSpeed < 165) ? 255 : moveSpeed - 35;
+      wheel.setSpeed(moveSpeed);
       Serial.println("Pressed Button 4 (Decrease move speed)");
       break;
     case 0:
@@ -67,21 +75,42 @@ void userInterface(uint8_t buttonPressed) {
   }
 }
 
-
-void loop() {
+void verifyAndSetDirection() {
   
-  // Mini pause to save battery. Robot is only responsive every 100ms
-  delay(100);
+  uint8_t nextDirection = directionModule.getDirection();
 
-  // Check for user input
-  userInterface(touchMenu.getButtonPressed());
+  // Direction has expired, set next direction
+  if (wheel.isExpired()) {
+    delay(600);
+    wheel.setDirectionAndRenew(nextDirection);
+  }
 
-  // Move
-  if (enableModule.isEnabled()) {
-    directionModule.run(moveSpeed);
-  } else {
-    directionModule.stop();
+  // Obstacle detected while moving forward, overwrite direction
+  if (wheel.getDirection() == 1 && wheel.getDirection() != nextDirection) {
+    wheel.pause();
+    delay(500);
+    wheel.setDirectionAndRenew(nextDirection);
+    
   }
   
+}
+
+void loop() {
+
+  // Check for user input
+  userInterface(getInput());
+
+  // Movement enabled
+  if (enableModule.isEnabled()) {
+    verifyAndSetDirection();
+    wheel.run();
+
+  // Movement disabled
+  } else {
+    wheel.pause();
+  }
+  
+  // Mini pause
+  delay(32);
   
 }

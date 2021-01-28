@@ -1,9 +1,6 @@
 
 #include "Arduino.h"
 #include "UltrasonicSensor.h"
-#include "MotorDriver.h"
-#include "LightSensor.h"
-#include "UltrasonicSensor.h"
 
 UltrasonicSensor::UltrasonicSensor(uint8_t trigPin, uint8_t echoPin)
 {

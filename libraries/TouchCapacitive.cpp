@@ -1,8 +1,6 @@
 
-
 #include "Arduino.h"
 #include "TouchCapacitive.h"
-
 
 TouchCapacitive::TouchCapacitive(int pin1, int pin2, int pin3, int pin4)
 {	
@@ -28,18 +26,16 @@ void TouchCapacitive::block(int duration)
 		// Check buttons 1 to 4
 		for (int i = 1; i < 5; i++) {
 			if (isButtonPressed(i)) {
-				Serial.println("Buffer is used");
 				_isBufferUsed = true;
 				_bufferValue = i;
 			}
 		}
-		delay(100);
+		delay(32);
 	}
 }
 
 uint8_t TouchCapacitive::getButtonPressed()
 {
-	
 	// Check buttons 1 to 4
 	for (int i = 1; i < 5; i++) {
 		if (isButtonPressed(i)) {
@@ -51,7 +47,6 @@ uint8_t TouchCapacitive::getButtonPressed()
 	// Check buffer
 	if (_isBufferUsed) {
 		_isBufferUsed = false;
-		Serial.println("---Returning buffer");
 		return _bufferValue;
 	}
 	
