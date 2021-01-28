@@ -1,185 +1,77 @@
+
+#include <DirectionModule.h>
+#include <EnableModule.h>
+#include <LightSensor.h>
 #include <MotorDriver.h>
 #include <TouchCapacitive.h>
-#include <Ultrasonic.h>
+#include <UltrasonicSensor.h>
 
 
-MotorDriver wheel (3, 2, 5, 4); // Analog1, Digital1, Analog2, DIgital2
-TouchCapacitive touchMenu (A2, A3, A4, A5); // Input1, Input2, Input3, INput4
-Ultrasonic leftSonic (7, 8); // Trigger, Echo
-Ultrasonic rightSonic (9, 10); // Trigger, Echo
-int leftSonicDistance;
-int rightSonicDistance;
+UltrasonicSensor leftSonic (7, 8); // Trigger, Echo
+UltrasonicSensor rightSonic (9, 10); // Trigger, Echo
+LightSensor frontSensor (12); // Input
 
-uint32_t programTimer; // The time that robot started running ( programTimer = millis() )
-uint32_t programRunDuration; // Robot stops running after ( x minutes * 60000L )
-bool programIsRunning; // If true, robot is running. If false, robot is not running.
+MotorDriver motorDriver (3, 2, 5, 4); // Analog1, Digital1, Analog2, DIgital2
+TouchCapacitive touchMenu (A2, A3, A4, A5); // Input1, Input2, Input3, Input4
+DirectionModule directionModule (motorDriver, frontSensor, leftSonic, rightSonic);
+EnableModule enableModule;
 
-int robotMoveSpeed; // Forward move speed
-int robotTurnSpeed; // Turn left, turn right speed
-int currMoveState; // Available states: Forward(1), left(2), right(3), reverse(4), stop(0)
-int nextMoveState;
-int robotMoveDelay; // Pauses for x milliseconds before changing direction
-
-int touchCapacitiveDelay; // Touch capacitive cannot be pressed again within x milliseconds
+int moveSpeed = 255;
 
 void resetRobot() {
-  programTimer = 0;
-  programRunDuration = 1 * 60000L; // 1 minute
-  programIsRunning = false; // Not running
-  robotMoveSpeed = 180;
-  robotTurnSpeed = 180;
-  currMoveState = 0;
-  nextMoveState = 0;
-  wheel.move(0, 0);
-  robotMoveDelay = 500;
-  touchCapacitiveDelay = 100;
+  motorDriver.move(0, 0, 0);
+  enableModule.reset();
+  moveSpeed = 255;
 }
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); // Starts the serial communication
-  srand (analogRead(0)); // Initialise random with seedm
   resetRobot();
 }
 
-void userInterface() {
+void userInterface(uint8_t buttonPressed) {
 
-  if ( touchMenu.isPressed(1) && !programIsRunning)
-  { // Add 30 minutes to run duration
-    programRunDuration += 30 * 60000L; // Increment by 30 minutes
-    Serial.print("Run duration is: ");
-    Serial.println(programRunDuration / 60000L);
-    while ( touchMenu.isPressed(1) ) delay ( touchCapacitiveDelay );
-  }
-  else if ( touchMenu.isPressed(2) )
-  { // Reset run parameters
-    resetRobot();
-    Serial.println("reset");
-    while ( touchMenu.isPressed(2) ) delay ( touchCapacitiveDelay );
-  }
-  else if ( touchMenu.isPressed(3) )
-  { // If running, set to pause. If paused, set to run.
-    programIsRunning = !programIsRunning;
-    robotMove(0);
-    Serial.println("Run/Pause");
-    while ( touchMenu.isPressed(3) ) delay ( touchCapacitiveDelay );
-  }
-  else if ( touchMenu.isPressed(4) )
-  { // Change speed -> [150, 180, 210, 240]
-    //( robotMoveSpeed == 240 ) ? robotMoveSpeed = 150 : robotMoveSpeed += 30;
-    //Serial.print("Speed: ");
-    //Serial.println(robotMoveSpeed);
-    while ( touchMenu.isPressed(4) ) delay ( touchCapacitiveDelay );
-  }
-
-}
-
-int robotConfirmSonic(){
-  int count = 0;
-  int prevDirection = robotCheckSonic();
-  int currDirection;
-  do{
-    currDirection = robotCheckSonic();
-    if(prevDirection == currDirection){
-      count += 1;
-    } else {
-      count = 0;
-      prevDirection = currDirection;
-    }
-  } while (count < 3);
-}
-
-int robotCheckSonic () {
-
-  leftSonicDistance = leftSonic.read();
-  rightSonicDistance = rightSonic.read();
-
-  Serial.print(leftSonicDistance);
-  Serial.print("/");
-  Serial.println(rightSonicDistance);
-
-  if (leftSonicDistance > 18 && rightSonicDistance > 18) {
-    return 1; // Move forward
-  } else if (leftSonicDistance < 19 && rightSonicDistance < 19) {
-    return 4; // Reverse
-  } else if (leftSonicDistance > 18 && rightSonicDistance < 19) {
-    return 2; // Turn left
-  } else if (leftSonicDistance < 19 && rightSonicDistance > 18) {
-    return 3; // Turn right
-  }
-}
-
-void robotMove (int moveDirection) {
-  switch (moveDirection) {
-    case 1: // Forward
-      wheel.move(robotMoveSpeed, robotMoveSpeed);
+  switch (buttonPressed) {
+    case 1:
+      enableModule.addDuration(10);
+      Serial.println("Pressed Button 1 (Add 10 minutes)");
       break;
-    case 2: // Left
-      wheel.move(-robotTurnSpeed, 0);
-      delay( rand() % 2000 + 500 ); // 500-2500ms
+    case 2:
+      resetRobot();
+      Serial.println("Pressed Button 2 (Reset)");
       break;
-    case 3: // Right
-      wheel.move(0, -robotTurnSpeed);
-      delay( rand() % 2000 + 500 );
+    case 3:
+      enableModule.toggleStart();
+      Serial.println("Pressed Button 3 (Toggle start/stop)");
       break;
-    case 4: // Reverse
-      ( rand() % 2 == 1 ) ? wheel.move(-robotTurnSpeed, 0) : wheel.move(0, -robotTurnSpeed);
-      delay( rand() % 2000 + 500 );
+    case 4:
+      moveSpeed = (moveSpeed < 130) ? 255 : moveSpeed - 35;
+      Serial.println("Pressed Button 4 (Decrease move speed)");
       break;
-    case 12: // Full Left
-      wheel.move(-robotTurnSpeed, robotTurnSpeed);
-      delay( rand() % 1000 + 500 ); // 500-1500ms
-      break;
-    case 13: // Full Right
-      wheel.move(robotTurnSpeed, -robotTurnSpeed);
-      delay( rand() % 1000 + 500 );
-      break;
-    case 0:
     default:
-      wheel.move(0, 0);
-      delay(robotMoveDelay);
+      return;
   }
-  currMoveState = moveDirection;
 }
 
 
 void loop() {
 
+  // Check for user input
+  userInterface(touchMenu.getButtonPressed());
+  
   // Mini pause to save battery
   delay(100);
 
   // Check for user input
-  userInterface();
+  userInterface(touchMenu.getButtonPressed());
 
-  // Skip if program is paused
-  if ( programIsRunning == false ) return;
-
-  // Record the current time (if not yet recorded)
-  if ( programTimer == 0 ) programTimer = millis();
-
-  // Stop robot if time is up
-  if ( millis() - programTimer > programRunDuration ) {
-    resetRobot();
-    Serial.println("time is up");
-    return;
+  // 
+  if (enableModule.isEnabled()) {
+    directionModule.run(moveSpeed);
+  } else {
+    directionModule.stop();
   }
-
-  // Start of main program
-
-  // Robot must come to complete stop before moving
-  // Robot states: Foward(1), Left(2), Right(3), Reverse(4), Stop(0)
-  nextMoveState = robotConfirmSonic();
-  if (currMoveState == 0) { // Robot is not moving
-    robotMove( robotConfirmSonic() );
-  } else if (currMoveState == nextMoveState) { // Robot is already in the correct direction
-    // If previous action was to soft turn, make a hard turn next
-    if (currMoveState == 2 || currMoveState == 3){
-      robotMove(currMoveState + 10);
-    }
-  } else { // Robot needs to change direction
-    robotMove(0);
-    delay(500);
-    robotMove(robotConfirmSonic());
-  }
-
+  
+  
 }

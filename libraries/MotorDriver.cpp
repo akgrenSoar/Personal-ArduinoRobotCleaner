@@ -1,10 +1,8 @@
 
-
 #include "Arduino.h"
 #include "MotorDriver.h"
 
-
-MotorDriver::MotorDriver(int pin1A, int pin1D, int pin2A, int pin2D){
+MotorDriver::MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D){
 	
 	_pin1A = pin1A;
 	_pin1D = pin1D;
@@ -15,48 +13,44 @@ MotorDriver::MotorDriver(int pin1A, int pin1D, int pin2A, int pin2D){
 	pinMode(_pin1D, OUTPUT);
 	pinMode(_pin2A, OUTPUT);
 	pinMode(_pin2D, OUTPUT);
+	
+	srand(analogRead(0)); // Initialize random seed
 }
 
-void MotorDriver::leftWheelForward(int speed){
+void MotorDriver::leftWheel(uint8_t speed, uint8_t direction)
+{
 	analogWrite(_pin1A, speed);
-	digitalWrite(_pin1D, LOW);
+	digitalWrite(_pin1D, direction);
 }
 
-// Speed cannot be zero or H-Bridge will fry
-void MotorDriver::leftWheelReverse(int speed){
-	analogWrite(_pin1A, 255 - speed);
-	digitalWrite(_pin1D, HIGH);
-}
-
-void MotorDriver::rightWheelForward(int speed){
+void MotorDriver::rightWheel(uint8_t speed, uint8_t direction)
+{
 	analogWrite(_pin2A, speed);
-	digitalWrite(_pin2D, LOW);
+	digitalWrite(_pin2D, direction);
 }
 
-// Speed cannot be zero or H-Bridge will fry
-void MotorDriver::rightWheelReverse(int speed){
-	analogWrite(_pin2A, 255 - speed);
-	digitalWrite(_pin2D, HIGH);
-}
-
-
-void MotorDriver::move(int leftSpeed, int rightSpeed){
-	
-	if(leftSpeed >= 0){
-		leftWheelForward(leftSpeed);
+// Left speed -255 to 255
+// Right speed -255 to 255
+// Duration is calculated as the range of (500ms to 2^duration+500ms), duration = 0 to disable
+void MotorDriver::move(int leftSpeed, int rightSpeed, int duration)
+{
+	if (leftSpeed >= 0) {
+		leftWheel(leftSpeed, LOW);
 	} else {
-		leftSpeed = -leftSpeed;
-		leftWheelReverse(leftSpeed);
+		leftWheel(255 + leftSpeed, HIGH);
 	}
 	
-	if(rightSpeed >= 0){
-		rightWheelForward(rightSpeed);
+	if (rightSpeed >= 0) {
+		rightWheel(rightSpeed, LOW);
 	} else {
-		rightSpeed = -rightSpeed;
-		rightWheelReverse(rightSpeed);
+		rightWheel(255 + rightSpeed, HIGH);
+	}
+	
+	if (duration > 0) {
+		delay((rand() & duration) + 500);
+		move(0, 0, 0);
 	}
 }
-
 
 
 	

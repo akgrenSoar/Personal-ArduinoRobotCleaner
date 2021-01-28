@@ -7,18 +7,16 @@ class MotorDriver
 {
 	
 	public:
-		MotorDriver(int pin1A, int pin1D, int pin2A, int pin2D);
-		void move(int leftSpeed, int rightSpeed);
+		MotorDriver(uint8_t pin1A, uint8_t pin1D, uint8_t pin2A, uint8_t pin2D);
+		void move(int leftSpeed, int rightSpeed, int duration);
 	
 	private:
-		void leftWheelForward(int speed);
-		void rightWheelForward(int speed);
-		void leftWheelReverse(int speed);
-		void rightWheelReverse(int speed);
-		int _pin1A;
-		int _pin1D;
-		int _pin2A;
-		int _pin2D;
+		uint8_t _pin1A;
+		uint8_t _pin1D;
+		uint8_t _pin2A;
+		uint8_t _pin2D;
+		void leftWheel(uint8_t speed, uint8_t direction);
+		void rightWheel(uint8_t speed, uint8_t direction);
 	
 };
 

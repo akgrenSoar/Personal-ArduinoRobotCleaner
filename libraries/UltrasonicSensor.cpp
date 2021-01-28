@@ -1,9 +1,11 @@
 
-
 #include "Arduino.h"
-#include "Ultrasonic.h"
+#include "UltrasonicSensor.h"
+#include "MotorDriver.h"
+#include "LightSensor.h"
+#include "UltrasonicSensor.h"
 
-Ultrasonic::Ultrasonic(int trigPin, int echoPin)
+UltrasonicSensor::UltrasonicSensor(uint8_t trigPin, uint8_t echoPin)
 {
 	_trigPin = trigPin;
 	_echoPin = echoPin;
@@ -11,12 +13,7 @@ Ultrasonic::Ultrasonic(int trigPin, int echoPin)
 	pinMode(_echoPin, INPUT); // Sets the echoPin as an Input
 }
 
-int Ultrasonic::read()
-{
-	return getDistance();
-}
-
-int Ultrasonic::getDistance()
+int UltrasonicSensor::getDistance()
 {
 	digitalWrite(_trigPin, LOW);
     delayMicroseconds(2);
@@ -27,7 +24,7 @@ int Ultrasonic::getDistance()
     // Reads the echoPin, returns the sound wave travel time in microseconds
     int duration = pulseIn(_echoPin, HIGH);
     // Calculating the distance
-    int distance = duration / 58.2;
+    int distance = duration >> 6; // duration / 58.2
   
     return distance;
 }
