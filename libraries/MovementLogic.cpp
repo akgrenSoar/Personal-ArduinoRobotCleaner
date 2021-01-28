@@ -3,19 +3,19 @@
 
 #include "Arduino.h"
 #include "MotorDriver.h"
-#include "Timer.h"
+#include "PauseThenMove.h"
 
 /////////////////////////////////////////
 ///////////////Constructor///////////////
 /////////////////////////////////////////
 
-MovementLogic::MovementLogic(MotorDriver *motorDriver, uint8_t speed)
-:	_motorDriver (motorDriver),
-	_timer ()
+MovementLogic::MovementLogic(MotorDriver *motorDriver, unsigned long pauseDuration, uint8_t speed) :
+	_motorDriver (motorDriver),
+	_pauseThenMove (0, 0, 0, 0)
 {
+	_pauseDuration = pauseDuration;
 	_speed = speed;
-	_direction = 0;
-	_moveCode = 0;
+	_currentDirection = 0;
 }
 
 ///////////////////////////////////////////////
@@ -32,84 +32,167 @@ void MovementLogic::setSpeed(uint8_t speed)
 	_speed = speed;
 }
 
-uint8_t MovementLogic::getDirection()
+unsigned long MovementLogic::getPauseDuration()
 {
-	return _direction;
+	return _pauseDuration;
 }
 
-void MovementLogic::setDirection(uint8_t direction)
+void MovementLogic::setPauseDuration(unsigned long pauseDuration)
 {
-	switch (direction) {
-		case 0: // Stop
-			if (_direction != 0) move(0);
-			break;
-		case 1: // Forward
-			if (_direction != 1) {
-				int array[] = {10, 12, 13};
-				move(roll(3, array));
-			} else {
-				int array[] = {15, 22, 23, 25, 32, 33, 35, 45};
-				move(roll(8, array));
-			}
-			break;
-		case 2: // Left
-			if (_direction != 2) {
-				move(20);
-			} else {
-				int array[] = {22, 23, 25, 42};
-				move(roll(4, array));
-			}
-			break;
-		case 3: // Right
-			if (_direction != 3) {
-				move(30);
-			} else {
-				int array[] = {32, 33, 35, 43};
-				move(roll(4, array));
-			}
-			break;
-		case 4: // Reverse
-			if (_direction != 4) {
-				int array[] = {20, 30, 40};
-				move(roll(3, array));
-			} else {
-				int array[] = {15, 22, 23, 25, 32, 33, 35, 45};
-				move(roll(8, array));
-			}
-			break;
-		case 5: // No change
-		default:
-			break;
+	_pauseDuration = pauseDuration;
+}
+
+///////////////////////////////////////////////
+////////////////////Movement///////////////////
+///////////////////////////////////////////////
+
+void MovementLogic::stop()
+{
+	_currentDirection = 0;
+	_pauseThenMove = PauseThenMove(0, 0, 0, 0);
+	_pauseThenMove.update(_motorDriver);
+	return;
+}
+
+void MovementLogic::forward()
+{
+	// All movements have precedence over forward movement
+	if (!_pauseThenMove.isExpired()) {
+		_pauseThenMove.update(_motorDriver);
+		return;
 	}
 	
-	if (direction != 5) {
-		_direction = direction;
+	// Start a new PauseThenMoveForward movement
+	if (_currentDirection != 1) {
+		_currentDirection = 1;
+		// Random movement of 3 possibilities
+		int array[] = {10, 12, 13};
+		move(roll(3, array));
+		_pauseThenMove.update(_motorDriver);
+		return;
 	}
+	
+	// PauseThenMoveForward movement is stuck!
+	// Perform break free manoeuvre
+	// Random movement of 8 possibilities
+	int array[] = {15, 22, 23, 25, 32, 33, 35, 45};
+	move(roll(8, array));
+	_pauseThenMove.update(_motorDriver);
+	return;
+}
+
+void MovementLogic::left()
+{
+	// Overwrite if current movement is PauseThenMoveForward movement
+	if (_currentDirection == 1) {
+		_currentDirection = 2;
+		move(20); // Turn left
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// Respect all other movements, wait for them to end
+	if (!_pauseThenMove.isExpired()) {
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// Currently not a PauseThenTurnLeft movement
+	// Start a new PauseThenTurnLeft movement
+	if (_currentDirection != 2) {
+		_currentDirection = 2;
+		move(20); // Turn left
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// PauseThenTurnLeft movement is stuck!
+	// Perform break free manoeuvre
+	// Random movement of 4 possibilities
+	int array[] = {22, 23, 25, 42};
+	move(roll(4, array));
+	_pauseThenMove.update(_motorDriver);
+	return;
+}
+
+void MovementLogic::right()
+{
+	// Overwrite if current movement is PauseThenMoveForward movement
+	if (_currentDirection == 1) {
+		_currentDirection = 3;
+		move(30); // Turn right
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// Respect all other movements, wait for them to end
+	if (!_pauseThenMove.isExpired()) {
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// Currently not a PauseThenTurnRight movement
+	// Start a new PauseThenTurnRight movement
+	if (_currentDirection != 3) {
+		_currentDirection = 3;
+		move(30); // Turn right
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// PauseThenTurnRight movement is stuck!
+	// Perform break free manoeuvre
+	// Random movement of 4 possibilities
+	int array[] = {32, 33, 35, 43};
+	move(roll(4, array));
+	_pauseThenMove.update(_motorDriver);
+	return;
+}
+
+void MovementLogic::reverse()
+{
+	// Overwrite if current movement is PauseThenMoveForward movement
+	if (_currentDirection == 1) {
+		_currentDirection = 4;
+		// Random movement of 3 possibilities
+		int array[] = {20, 30, 40};
+		move(roll(3, array));
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// Respect all other movements, wait for them to end
+	if (!_pauseThenMove.isExpired()) {
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// Currently not a PauseThenReverse movement
+	// Start a new PauseThenReverse movement
+	if (_currentDirection != 4) {
+		_currentDirection = 4;
+		// Random movement of 3 possibilities
+		int array[] = {20, 30, 40};
+		move(roll(3, array));
+		_pauseThenMove.update(_motorDriver);
+		return;
+	}
+	
+	// PauseThenReverse movement is stuck!
+	// Perform break free manoeuvre
+	// Random movement of 8 possibilities
+	int array[] = {15, 22, 23, 25, 32, 33, 35, 45};
+	move(roll(8, array));
+	_pauseThenMove.update(_motorDriver);
+	return;
 }
 
 /////////////////////////////////////
-///////////////Methods///////////////
+////////////////Helper///////////////
 /////////////////////////////////////
-
-bool MovementLogic::isExpired()
-{
-	return _timer.isExpired();
-}
-
-void MovementLogic::refresh()
-{
-	move(_moveCode);
-}
-
-void MovementLogic::pause(unsigned long duration)
-{
-	move(0, 0, duration);
-}
 
 void MovementLogic::move(uint8_t moveCode)
-{
-	_moveCode = moveCode;
-	
+{	
 	switch (moveCode) {
 		// Stop
 		case 00:
@@ -174,24 +257,17 @@ void MovementLogic::move(uint8_t moveCode)
 	}
 }
 
-void MovementLogic::move(int leftSpeed, int rightSpeed, unsigned long duration)
+void MovementLogic::move(int leftSpeed, int rightSpeed, unsigned long moveDuration)
 {
-	_motorDriver->move(leftSpeed, rightSpeed);
-	_timer.setDuration(duration);
-	_timer.start();
+	_pauseThenMove = PauseThenMove(
+		_pauseDuration,
+		moveDuration,
+		leftSpeed,
+		rightSpeed);
 }
-
-
-
-
-
-
 
 // Randomly picks one value from the array
 int MovementLogic::roll(int arraySize, int *array)
 {
 	return array[random(arraySize)];
 }
-
-
-

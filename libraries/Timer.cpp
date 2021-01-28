@@ -2,61 +2,39 @@
 #include "Arduino.h"
 #include "Timer.h"
 
-///////////////Constructor///////////////
-
-Timer::Timer()
+Timer::Timer(unsigned long millisecond)
 {
-	_duration = 0;
+	_duration = millisecond;
 	_startTime = 0;
 }
 
-Timer::Timer(unsigned long millis) 
-{
-	_duration = millis;
-}
-
-///////////////Getter and Setter///////////////
-
-unsigned long Timer::getDuration()
-{
-    return _duration;
-}
-
-void Timer::setDuration(unsigned long millis)
-{
-    _duration = millis;
-}
-
-///////////////Methods///////////////
-
-// Reset timer
-void Timer::reset()
-{
-	_startTime = 0;
-}
-
-// Start timer
+/**
+ * Start/Restart the timer.
+ */
 void Timer::start()
 {
-	if (_startTime == 0 || isExpired()) _startTime = millis();
+	_startTime = millis();
 }
 
-// Restart timer
-void Timer::restart()
+/**
+ * Check whether the timer has been started.
+ * 
+ * @return true if timer has been started, otherwise false.
+ */
+bool Timer::hasStarted()
 {
-	reset();
-	start();
+	return _startTime != 0;
 }
 
-// Returns elapsed time since start
-unsigned long Timer::timeElapsed()
-{
-	return millis() - _startTime;
-}
-
-// When elapsed time exceeds timer duration
+/**
+ * Checks whether the timer has expired.
+ * 
+ * @returns true if the time is up. Otherwise, false.
+ */
 bool Timer::isExpired()
 {
-	return (timeElapsed() > _duration) ? true : false;
+	unsigned long currentTime = millis();
+	unsigned long timeElapsed = currentTime - _startTime;
+	
+	return (timeElapsed > _duration) ? true : false;
 }
-

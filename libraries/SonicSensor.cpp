@@ -11,8 +11,10 @@ SonicSensor::SonicSensor(uint8_t trigPin, uint8_t echoPin)
 }
 
 /**
- * Read sensor distance (cm)
- * Using rough and less accurate conversion
+ * Read sensor distance in centimeters.
+ * This method uses a less accurate approximation of the distance.
+ * 
+ * @returns Sensor distance in centimeters.
  */
 unsigned long SonicSensor::getDistance()
 {
@@ -24,9 +26,9 @@ unsigned long SonicSensor::getDistance()
     
     // Reads the echoPin, returns the sound wave travel time in microseconds
     unsigned long duration = pulseIn(_echoPin, HIGH);
-    // Calculating the distance
-    unsigned long distance = duration >> 6; // duration / 58.2
+    // Approximating the distance
+	// For more accurate distance calculation, use duration / 58.2
+    unsigned long distance = duration >> 6;
   
     return distance;
 }
-

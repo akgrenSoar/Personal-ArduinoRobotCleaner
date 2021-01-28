@@ -23,13 +23,13 @@ int DirectionLogic::getDirection()
 // Returns 1 Forward 2 Left 3 Right 4 Reverse
 int DirectionLogic::readSensor()
 {
-	//unsigned long frontDistance = _frontSensor->getDistance();
+	unsigned long frontDistance = _frontSensor->getDistance();
 	unsigned long leftDistance = _leftSensor->getDistance();
 	unsigned long rightDistance = _rightSensor->getDistance();
 	
-	//if (frontDistance <= _frontThreshold) {
-	//	return 4; // Reverse
-	//}
+	if (frontDistance <= _frontThreshold) {
+		return 4; // Reverse
+	}
 	
     if (leftDistance > _leftThreshold && rightDistance > _rightThreshold) {
         return 1; // Move forward

@@ -8,6 +8,11 @@ LightSensor::LightSensor(uint8_t pinIn)
     pinMode(_pinIn, INPUT);
 }
 
+/**
+ * Reads the state of the light sensor
+ * 
+ * @return true if obstacle is detected, otherwise false.
+ */
 bool LightSensor::isTriggered()
 {
     return digitalRead(_pinIn) == LOW ? true : false ;
